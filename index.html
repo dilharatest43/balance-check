@@ -4,36 +4,20 @@
   <meta charset="UTF-8">
   <title>Cash Spending Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f6f9; }
     h1 { text-align: center; }
-    .form-box { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: none; }
-    input, button { margin: 5px; padding: 8px; }
+    .chart-container { display: flex; justify-content: center; margin-top: 20px; }
+    canvas { max-width: 250px !important; max-height: 250px !important; }
+    #balance { font-weight: bold; margin-top: 15px; text-align: center; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background: #eee; }
-    #balance { font-weight: bold; margin-top: 15px; text-align: center; }
-    .chart-container { display: flex; justify-content: center; margin-top: 20px; }
-    canvas { max-width: 250px !important; max-height: 250px !important; }
   </style>
 </head>
 <body>
   <h1>💰 Cash Spending Tracker</h1>
-
-  <!-- Admin Login -->
-  <div style="text-align:center; margin-bottom:15px;">
-    <input type="password" id="adminPass" placeholder="Enter Admin Password">
-    <button onclick="checkAdmin()">Login as Admin</button>
-  </div>
-
-  <!-- Add Spending Form (hidden until admin logs in) -->
-  <div class="form-box" id="adminForm">
-    <label>Category: </label>
-    <input type="text" id="category" placeholder="e.g. Food">
-    <label>Amount: </label>
-    <input type="number" id="amount" placeholder="e.g. 5000">
-    <button onclick="addSpending()">Add Spending</button>
-  </div>
 
   <div class="chart-container">
     <canvas id="spendingChart"></canvas>
@@ -53,53 +37,40 @@
 
   <script>
     const TOTAL_BUDGET = 100000;
-    const ADMIN_PASSWORD = "12345"; // change this password
-    let spendings = JSON.parse(localStorage.getItem("spendings")) || [];
+    let spendings = [];
 
-    function checkAdmin() {
-      const pass = document.getElementById("adminPass").value;
-      if (pass === ADMIN_PASSWORD) {
-        document.getElementById("adminForm").style.display = "block";
-        alert("✅ Admin Access Granted");
-      } else {
-        alert("❌ Wrong Password");
-      }
-      document.getElementById("adminPass").value = "";
-    }
+    function fetchData() {
+      const publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1L1q9S-EOS2Xp7gN6WdO-Jcnzix4cyiGK7ETcVLZTkHs/pubhtml';
 
-    function addSpending() {
-      const category = document.getElementById("category").value;
-      const amount = parseInt(document.getElementById("amount").value);
-
-      if (!category || isNaN(amount) || amount <= 0) {
-        alert("Please enter valid category and amount.");
-        return;
-      }
-
-      spendings.push({ category, amount });
-      localStorage.setItem("spendings", JSON.stringify(spendings));
-
-      document.getElementById("category").value = "";
-      document.getElementById("amount").value = "";
-      render();
+      Tabletop.init({
+        key: publicSpreadsheetUrl,
+        simpleSheet: true,
+        callback: function(data) {
+          spendings = data.map(row => ({
+            category: row.Category,
+            amount: parseInt(row.Amount)
+          }));
+          render();
+        }
+      });
     }
 
     function render() {
+      // Render table
       const table = document.getElementById("spendingTable");
       table.innerHTML = "";
       let totalSpent = 0;
-
       spendings.forEach(s => {
         totalSpent += s.amount;
-        let row = `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
-        table.innerHTML += row;
+        table.innerHTML += `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
       });
 
+      // Show balance
       const balance = TOTAL_BUDGET - totalSpent;
       document.getElementById("balance").innerText = 
         `Total Spent: ${totalSpent} | Balance: ${balance}`;
 
-      // Chart update
+      // Render chart
       const ctx = document.getElementById("spendingChart").getContext("2d");
       if (window.myChart) window.myChart.destroy();
       window.myChart = new Chart(ctx, {
@@ -111,15 +82,11 @@
             backgroundColor: ["#ff6384", "#36a2eb", "#ffce56", "#8bc34a", "#ff9800", "#9c27b0"]
           }]
         },
-        options: {
-          plugins: { legend: { position: 'bottom' } },
-          cutout: "70%" // donut style
-        }
+        options: { plugins: { legend: { position: 'bottom' } }, cutout: "70%" }
       });
     }
 
-    render();
+    fetchData();
   </script>
 </body>
 </html>
-
