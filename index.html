@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Cash Spending Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f6f9; }
     h1 { text-align: center; }
@@ -39,24 +39,21 @@
     const TOTAL_BUDGET = 100000;
     let spendings = [];
 
-    function fetchData() {
-      const publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR65Z6RcDyHJ22zaLeLO7EmcIZOEZqXOve-fqqJD_cHoxxhuodeq14xk7O_Q5wLquYULXDZtFOQRTDe/pubhtml';
+    // Your published sheet CSV link
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR65Z6RcDyHJ22zaLeLO7EmcIZOEZqXOve-fqqJD_cHoxxhuodeq14xk7O_Q5wLquYULXDZtFOQRTDe/pub?output=csv';
 
-      Tabletop.init({
-        key: publicSpreadsheetUrl,
-        simpleSheet: true,
-        callback: function(data) {
-          spendings = data.map(row => ({
-            category: row.Category,
-            amount: parseInt(row.Amount)
-          }));
-          render();
-        }
+    fetch(csvUrl)
+      .then(response => response.text())
+      .then(csv => {
+        const parsed = Papa.parse(csv, { header: true }).data;
+        spendings = parsed.map(row => ({
+          category: row.Category,
+          amount: parseInt(row.Amount)
+        }));
+        render();
       });
-    }
 
     function render() {
-      // Render table
       const table = document.getElementById("spendingTable");
       table.innerHTML = "";
       let totalSpent = 0;
@@ -66,12 +63,9 @@
         table.innerHTML += `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
       });
 
-      // Show balance
       const balance = TOTAL_BUDGET - totalSpent;
-      document.getElementById("balance").innerText = 
-        `Total Spent: ${totalSpent} | Balance: ${balance}`;
+      document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${balance}`;
 
-      // Render chart
       const ctx = document.getElementById("spendingChart").getContext("2d");
       if (window.myChart) window.myChart.destroy();
       window.myChart = new Chart(ctx, {
@@ -86,8 +80,6 @@
         options: { plugins: { legend: { position: 'bottom' } }, cutout: "70%" }
       });
     }
-
-    fetchData();
   </script>
 </body>
 </html>
