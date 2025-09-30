@@ -7,53 +7,161 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 15px; background: #f4f6f9; margin: 0; }
-    h1 { text-align: center; font-size: 1.8rem; margin-bottom: 20px; }
-    .chart-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
-    canvas { width: 90% !important; max-width: 300px; max-height: 300px; }
-    #balance { font-weight: bold; margin-top: 15px; text-align: center; font-size: 1.2rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; font-size: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-    th { background: #eee; font-size: 1.1rem; }
-    label, select, button { font-size: 1rem; margin-right: 10px; padding: 5px; }
-    #monthlyChartContainer { display: none; margin-top: 20px; }
-    @media (max-width: 600px) {
-      h1 { font-size: 1.5rem; }
-      #balance { font-size: 1rem; }
-      table { font-size: 0.9rem; }
-      th, td { padding: 8px; }
-      canvas { max-width: 100% !important; max-height: 250px; }
+    /* Global Styles */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f2f5;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      padding: 15px 0;
+      margin: 0;
+      background: #36a2eb;
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    select, button {
+      padding: 8px 12px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    button {
+      background: #36a2eb;
+      color: #fff;
+      border: none;
+    }
+    button:hover {
+      background: #2b8ed8;
+    }
+
+    /* Balance Card */
+    #balance {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      padding: 10px 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Charts */
+    .chart-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    canvas {
+      width: 100% !important;
+      max-width: 350px;
+      height: auto !important;
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 1rem;
+    }
+    th, td {
+      padding: 12px 8px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #36a2eb;
+      color: #fff;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Monthly Chart Container */
+    #monthlyChartContainer {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .chart-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      select, button {
+        width: 100%;
+      }
+      table {
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
 <body>
   <h1>💰 Cash Spending Tracker</h1>
+  <div class="container">
+    <!-- Controls -->
+    <div class="controls">
+      <label for="monthSelect">Select Month:</label>
+      <select id="monthSelect"></select>
+      <button id="toggleMonthly">Show Monthly Comparison</button>
+    </div>
 
-  <div style="text-align:center; margin-bottom:10px;">
-    <label for="monthSelect">Select Month:</label>
-    <select id="monthSelect"></select>
-    <button id="toggleMonthly">Show Monthly Comparison</button>
+    <!-- Balance -->
+    <div id="balance"></div>
+
+    <!-- Charts -->
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+    </div>
+    <div id="monthlyChartContainer">
+      <canvas id="monthlyChart"></canvas>
+    </div>
+
+    <!-- Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody id="spendingTable"></tbody>
+    </table>
   </div>
-
-  <div class="chart-container">
-    <canvas id="categoryChart"></canvas>
-  </div>
-
-  <div id="monthlyChartContainer">
-    <canvas id="monthlyChart"></canvas>
-  </div>
-
-  <p id="balance"></p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Category</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-    <tbody id="spendingTable"></tbody>
-  </table>
 
   <script>
     const TOTAL_BUDGET = 100000;
@@ -120,7 +228,7 @@
       const monthlyData = groupByMonth(spendings);
       const monthSpendings = spendings.filter(s => monthKey(s.date) === month);
 
-      // Update table
+      // Table
       const table = document.getElementById("spendingTable");
       table.innerHTML = "";
       let totalSpent = 0;
@@ -130,7 +238,7 @@
       });
       document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${TOTAL_BUDGET - totalSpent}`;
 
-      // Category Doughnut Chart
+      // Doughnut Chart
       const ctxCat = document.getElementById("categoryChart").getContext("2d");
       if(categoryChart) categoryChart.destroy();
       categoryChart = new Chart(ctxCat, {
@@ -145,7 +253,7 @@
         options: { plugins:{legend:{position:'bottom'}}, cutout:"70%" }
       });
 
-      // Monthly Comparison Bar Chart
+      // Monthly Comparison Chart
       const ctxMon = document.getElementById("monthlyChart").getContext("2d");
       if(monthlyChart) monthlyChart.destroy();
       monthlyChart = new Chart(ctxMon, {
@@ -158,18 +266,14 @@
             backgroundColor: '#36a2eb'
           }]
         },
-        options: { plugins:{legend:{display:false}} }
+        options: { plugins:{legend:{display:false}}, responsive:true }
       });
     }
 
-    // Toggle monthly chart visibility
+    // Toggle monthly chart
     document.getElementById('toggleMonthly').addEventListener('click', () => {
       const container = document.getElementById('monthlyChartContainer');
-      if(container.style.display === 'none') {
-        container.style.display = 'block';
-      } else {
-        container.style.display = 'none';
-      }
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
     });
   </script>
 </body>
