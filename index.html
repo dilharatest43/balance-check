@@ -15,8 +15,8 @@
     table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; font-size: 1rem; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
     th { background: #eee; font-size: 1.1rem; }
-    label, select { font-size: 1rem; margin-right: 10px; }
-    select { padding: 5px; }
+    label, select, button { font-size: 1rem; margin-right: 10px; padding: 5px; }
+    #monthlyChartContainer { display: none; margin-top: 20px; }
     @media (max-width: 600px) {
       h1 { font-size: 1.5rem; }
       #balance { font-size: 1rem; }
@@ -32,10 +32,14 @@
   <div style="text-align:center; margin-bottom:10px;">
     <label for="monthSelect">Select Month:</label>
     <select id="monthSelect"></select>
+    <button id="toggleMonthly">Show Monthly Comparison</button>
   </div>
 
   <div class="chart-container">
     <canvas id="categoryChart"></canvas>
+  </div>
+
+  <div id="monthlyChartContainer">
     <canvas id="monthlyChart"></canvas>
   </div>
 
@@ -56,7 +60,6 @@
     let spendings = [];
     let categoryChart, monthlyChart;
 
-    // CSV link from "Publish to web" (CSV output)
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR65Z6RcDyHJ22zaLeLO7EmcIZOEZqXOve-fqqJD_cHoxxhuodeq14xk7O_Q5wLquYULXDZtFOQRTDe/pub?output=csv';
 
     fetch(csvUrl)
@@ -75,20 +78,10 @@
         });
 
         populateMonthSelect();
-        renderMonth(getLatestMonth());
+        const latestMonth = getLatestMonth();
+        document.getElementById('monthSelect').value = latestMonth;
+        renderMonth(latestMonth);
       });
-
-    function populateMonthSelect() {
-      const select = document.getElementById('monthSelect');
-      const months = [...new Set(spendings.map(s => monthKey(s.date)))].sort();
-      months.forEach(m => {
-        const option = document.createElement('option');
-        option.value = m;
-        option.text = m;
-        select.appendChild(option);
-      });
-      select.addEventListener('change', () => renderMonth(select.value));
-    }
 
     function monthKey(date) {
       return date.getFullYear() + '-' + (date.getMonth() + 1).toString().padStart(2,'0');
@@ -99,6 +92,18 @@
         const m = monthKey(s.date);
         return m > latest ? m : latest;
       }, '0000-00');
+    }
+
+    function populateMonthSelect() {
+      const select = document.getElementById('monthSelect');
+      const months = [...new Set(spendings.map(s => monthKey(s.date)))].sort().reverse(); // latest first
+      months.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.text = m;
+        select.appendChild(option);
+      });
+      select.addEventListener('change', () => renderMonth(select.value));
     }
 
     function groupByMonth(data) {
@@ -113,8 +118,6 @@
 
     function renderMonth(month) {
       const monthlyData = groupByMonth(spendings);
-
-      // Filter spendings for selected month
       const monthSpendings = spendings.filter(s => monthKey(s.date) === month);
 
       // Update table
@@ -125,10 +128,9 @@
         totalSpent += s.amount;
         table.innerHTML += `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
       });
-
       document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${TOTAL_BUDGET - totalSpent}`;
 
-      // Doughnut chart for categories
+      // Category Doughnut Chart
       const ctxCat = document.getElementById("categoryChart").getContext("2d");
       if(categoryChart) categoryChart.destroy();
       categoryChart = new Chart(ctxCat, {
@@ -143,7 +145,7 @@
         options: { plugins:{legend:{position:'bottom'}}, cutout:"70%" }
       });
 
-      // Monthly comparison bar chart
+      // Monthly Comparison Bar Chart
       const ctxMon = document.getElementById("monthlyChart").getContext("2d");
       if(monthlyChart) monthlyChart.destroy();
       monthlyChart = new Chart(ctxMon, {
@@ -159,6 +161,16 @@
         options: { plugins:{legend:{display:false}} }
       });
     }
+
+    // Toggle monthly chart visibility
+    document.getElementById('toggleMonthly').addEventListener('click', () => {
+      const container = document.getElementById('monthlyChartContainer');
+      if(container.style.display === 'none') {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>
