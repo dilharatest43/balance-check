@@ -17,8 +17,6 @@
     th { background: #eee; font-size: 1.1rem; }
     label, select { font-size: 1rem; margin-right: 10px; }
     select { padding: 5px; }
-
-    /* Mobile responsiveness */
     @media (max-width: 600px) {
       h1 { font-size: 1.5rem; }
       #balance { font-size: 1rem; }
@@ -58,9 +56,9 @@
     let spendings = [];
     let categoryChart, monthlyChart;
 
+    // CSV link from "Publish to web" (CSV output)
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR65Z6RcDyHJ22zaLeLO7EmcIZOEZqXOve-fqqJD_cHoxxhuodeq14xk7O_Q5wLquYULXDZtFOQRTDe/pub?output=csv';
 
-    // Fetch data from Google Sheet
     fetch(csvUrl)
       .then(res => res.text())
       .then(csv => {
@@ -80,11 +78,9 @@
         renderMonth(getLatestMonth());
       });
 
-    // Populate month dropdown
     function populateMonthSelect() {
       const select = document.getElementById('monthSelect');
-      const months = [...new Set(spendings.map(s => s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0')))];
-      months.sort();
+      const months = [...new Set(spendings.map(s => monthKey(s.date)))].sort();
       months.forEach(m => {
         const option = document.createElement('option');
         option.value = m;
@@ -94,19 +90,21 @@
       select.addEventListener('change', () => renderMonth(select.value));
     }
 
-    // Get the latest month
+    function monthKey(date) {
+      return date.getFullYear() + '-' + (date.getMonth() + 1).toString().padStart(2,'0');
+    }
+
     function getLatestMonth() {
       return spendings.reduce((latest, s) => {
-        const m = s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0');
+        const m = monthKey(s.date);
         return m > latest ? m : latest;
       }, '0000-00');
     }
 
-    // Group spendings by month
     function groupByMonth(data) {
       const monthly = {};
       data.forEach(s => {
-        const key = s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0');
+        const key = monthKey(s.date);
         if (!monthly[key]) monthly[key] = 0;
         monthly[key] += s.amount;
       });
@@ -117,10 +115,7 @@
       const monthlyData = groupByMonth(spendings);
 
       // Filter spendings for selected month
-      const monthSpendings = spendings.filter(s => {
-        const key = s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0');
-        return key === month;
-      });
+      const monthSpendings = spendings.filter(s => monthKey(s.date) === month);
 
       // Update table
       const table = document.getElementById("spendingTable");
@@ -133,7 +128,7 @@
 
       document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${TOTAL_BUDGET - totalSpent}`;
 
-      // Category Doughnut Chart
+      // Doughnut chart for categories
       const ctxCat = document.getElementById("categoryChart").getContext("2d");
       if(categoryChart) categoryChart.destroy();
       categoryChart = new Chart(ctxCat, {
@@ -148,7 +143,7 @@
         options: { plugins:{legend:{position:'bottom'}}, cutout:"70%" }
       });
 
-      // Monthly Comparison Bar Chart
+      // Monthly comparison bar chart
       const ctxMon = document.getElementById("monthlyChart").getContext("2d");
       if(monthlyChart) monthlyChart.destroy();
       monthlyChart = new Chart(ctxMon, {
