@@ -3,24 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <title>💰 Cash Spending Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f6f9; }
-    h1 { text-align: center; }
-    .chart-container { display: flex; justify-content: center; margin-top: 20px; }
-    canvas { max-width: 250px !important; max-height: 250px !important; }
-    #balance { font-weight: bold; margin-top: 15px; text-align: center; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #eee; }
+    body { font-family: Arial, sans-serif; padding: 15px; background: #f4f6f9; margin: 0; }
+    h1 { text-align: center; font-size: 1.8rem; margin-bottom: 20px; }
+    .chart-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
+    canvas { width: 90% !important; max-width: 300px; max-height: 300px; }
+    #balance { font-weight: bold; margin-top: 15px; text-align: center; font-size: 1.2rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; font-size: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #eee; font-size: 1.1rem; }
+    label, select { font-size: 1rem; margin-right: 10px; }
+    select { padding: 5px; }
+
+    /* Mobile responsiveness */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+      #balance { font-size: 1rem; }
+      table { font-size: 0.9rem; }
+      th, td { padding: 8px; }
+      canvas { max-width: 100% !important; max-height: 250px; }
+    }
   </style>
 </head>
 <body>
   <h1>💰 Cash Spending Tracker</h1>
 
+  <div style="text-align:center; margin-bottom:10px;">
+    <label for="monthSelect">Select Month:</label>
+    <select id="monthSelect"></select>
+  </div>
+
   <div class="chart-container">
-    <canvas id="spendingChart"></canvas>
+    <canvas id="categoryChart"></canvas>
+    <canvas id="monthlyChart"></canvas>
   </div>
 
   <p id="balance"></p>
@@ -38,57 +56,112 @@
   <script>
     const TOTAL_BUDGET = 100000;
     let spendings = [];
+    let categoryChart, monthlyChart;
 
-    // Your published sheet CSV link
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR65Z6RcDyHJ22zaLeLO7EmcIZOEZqXOve-fqqJD_cHoxxhuodeq14xk7O_Q5wLquYULXDZtFOQRTDe/pub?output=csv';
 
-    // Fetch and parse Google Sheet
+    // Fetch data from Google Sheet
     fetch(csvUrl)
-      .then(response => response.text())
+      .then(res => res.text())
       .then(csv => {
         const parsed = Papa.parse(csv, { header: true }).data;
 
         spendings = parsed.map(row => {
-          // Normalize keys to lowercase and trim spaces
           const keys = {};
-          for (let key in row) {
-            keys[key.trim().toLowerCase()] = row[key];
-          }
-
+          for (let key in row) keys[key.trim().toLowerCase()] = row[key];
           return {
             category: keys['category'] || 'Unknown',
-            amount: parseInt(keys['amount']) || 0
+            amount: parseInt(keys['amount']) || 0,
+            date: keys['date'] ? new Date(keys['date']) : new Date()
           };
         });
 
-        render();
+        populateMonthSelect();
+        renderMonth(getLatestMonth());
       });
 
-    function render() {
+    // Populate month dropdown
+    function populateMonthSelect() {
+      const select = document.getElementById('monthSelect');
+      const months = [...new Set(spendings.map(s => s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0')))];
+      months.sort();
+      months.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.text = m;
+        select.appendChild(option);
+      });
+      select.addEventListener('change', () => renderMonth(select.value));
+    }
+
+    // Get the latest month
+    function getLatestMonth() {
+      return spendings.reduce((latest, s) => {
+        const m = s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0');
+        return m > latest ? m : latest;
+      }, '0000-00');
+    }
+
+    // Group spendings by month
+    function groupByMonth(data) {
+      const monthly = {};
+      data.forEach(s => {
+        const key = s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0');
+        if (!monthly[key]) monthly[key] = 0;
+        monthly[key] += s.amount;
+      });
+      return monthly;
+    }
+
+    function renderMonth(month) {
+      const monthlyData = groupByMonth(spendings);
+
+      // Filter spendings for selected month
+      const monthSpendings = spendings.filter(s => {
+        const key = s.date.getFullYear() + '-' + (s.date.getMonth()+1).toString().padStart(2,'0');
+        return key === month;
+      });
+
+      // Update table
       const table = document.getElementById("spendingTable");
       table.innerHTML = "";
       let totalSpent = 0;
-
-      spendings.forEach(s => {
+      monthSpendings.forEach(s => {
         totalSpent += s.amount;
         table.innerHTML += `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
       });
 
-      const balance = TOTAL_BUDGET - totalSpent;
-      document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${balance}`;
+      document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${TOTAL_BUDGET - totalSpent}`;
 
-      const ctx = document.getElementById("spendingChart").getContext("2d");
-      if (window.myChart) window.myChart.destroy();
-      window.myChart = new Chart(ctx, {
+      // Category Doughnut Chart
+      const ctxCat = document.getElementById("categoryChart").getContext("2d");
+      if(categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(ctxCat, {
         type: 'doughnut',
         data: {
-          labels: spendings.map(s => s.category),
+          labels: monthSpendings.map(s => s.category),
           datasets: [{
-            data: spendings.map(s => s.amount),
-            backgroundColor: ["#ff6384", "#36a2eb", "#ffce56", "#8bc34a", "#ff9800", "#9c27b0"]
+            data: monthSpendings.map(s => s.amount),
+            backgroundColor: ["#ff6384","#36a2eb","#ffce56","#8bc34a","#ff9800","#9c27b0","#00bcd4","#e91e63"]
           }]
         },
-        options: { plugins: { legend: { position: 'bottom' } }, cutout: "70%" }
+        options: { plugins:{legend:{position:'bottom'}}, cutout:"70%" }
+      });
+
+      // Monthly Comparison Bar Chart
+      const ctxMon = document.getElementById("monthlyChart").getContext("2d");
+      if(monthlyChart) monthlyChart.destroy();
+      monthlyChart = new Chart(ctxMon, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(monthlyData),
+          datasets: [{
+            label: 'Monthly Spending',
+            data: Object.values(monthlyData),
+            backgroundColor: '#36a2eb'
+          }]
+        },
+        options: { plugins:{legend:{display:false}} }
       });
     }
   </script>
