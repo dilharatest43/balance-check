@@ -40,7 +40,8 @@
     let spendings = [];
 
     function fetchData() {
-      const publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1L1q9S-EOS2Xp7gN6WdO-Jcnzix4cyiGK7ETcVLZTkHs/pubhtml';
+      // Replace this URL with your published sheet link
+      const publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEXAMPLE/pubhtml';
 
       Tabletop.init({
         key: publicSpreadsheetUrl,
@@ -60,6 +61,7 @@
       const table = document.getElementById("spendingTable");
       table.innerHTML = "";
       let totalSpent = 0;
+
       spendings.forEach(s => {
         totalSpent += s.amount;
         table.innerHTML += `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
