@@ -7,7 +7,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <style>
-    /* Global Styles */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
@@ -24,14 +23,11 @@
       color: #fff;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    /* Container */
     .container {
       max-width: 1200px;
       margin: 20px auto;
       padding: 0 15px;
     }
-
-    /* Controls */
     .controls {
       display: flex;
       flex-wrap: wrap;
@@ -56,8 +52,6 @@
     button:hover {
       background: #2b8ed8;
     }
-
-    /* Balance Card */
     #balance {
       text-align: center;
       font-weight: bold;
@@ -68,8 +62,6 @@
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    /* Charts */
     .chart-container {
       display: flex;
       flex-wrap: wrap;
@@ -86,8 +78,6 @@
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    /* Table */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -109,13 +99,9 @@
     tr:last-child td {
       border-bottom: none;
     }
-
-    /* Monthly Chart Container */
     #monthlyChartContainer {
       display: none;
     }
-
-    /* Responsive */
     @media (max-width: 768px) {
       .chart-container {
         flex-direction: column;
@@ -133,17 +119,14 @@
 <body>
   <h1>💰 Cash Spending Tracker</h1>
   <div class="container">
-    <!-- Controls -->
     <div class="controls">
       <label for="monthSelect">Select Month:</label>
       <select id="monthSelect"></select>
       <button id="toggleMonthly">Show Monthly Comparison</button>
     </div>
 
-    <!-- Balance -->
     <div id="balance"></div>
 
-    <!-- Charts -->
     <div class="chart-container">
       <canvas id="categoryChart"></canvas>
     </div>
@@ -151,12 +134,12 @@
       <canvas id="monthlyChart"></canvas>
     </div>
 
-    <!-- Table -->
     <table>
       <thead>
         <tr>
           <th>Category</th>
           <th>Amount</th>
+          <th>Date</th>
         </tr>
       </thead>
       <tbody id="spendingTable"></tbody>
@@ -204,7 +187,7 @@
 
     function populateMonthSelect() {
       const select = document.getElementById('monthSelect');
-      const months = [...new Set(spendings.map(s => monthKey(s.date)))].sort().reverse(); // latest first
+      const months = [...new Set(spendings.map(s => monthKey(s.date)))].sort().reverse();
       months.forEach(m => {
         const option = document.createElement('option');
         option.value = m;
@@ -228,17 +211,21 @@
       const monthlyData = groupByMonth(spendings);
       const monthSpendings = spendings.filter(s => monthKey(s.date) === month);
 
-      // Table
       const table = document.getElementById("spendingTable");
       table.innerHTML = "";
       let totalSpent = 0;
       monthSpendings.forEach(s => {
         totalSpent += s.amount;
-        table.innerHTML += `<tr><td>${s.category}</td><td>${s.amount}</td></tr>`;
+        const formattedDate = s.date.toLocaleDateString();
+        table.innerHTML += `<tr>
+                              <td>${s.category}</td>
+                              <td>${s.amount}</td>
+                              <td>${formattedDate}</td>
+                            </tr>`;
       });
+
       document.getElementById("balance").innerText = `Total Spent: ${totalSpent} | Balance: ${TOTAL_BUDGET - totalSpent}`;
 
-      // Doughnut Chart
       const ctxCat = document.getElementById("categoryChart").getContext("2d");
       if(categoryChart) categoryChart.destroy();
       categoryChart = new Chart(ctxCat, {
@@ -253,7 +240,6 @@
         options: { plugins:{legend:{position:'bottom'}}, cutout:"70%" }
       });
 
-      // Monthly Comparison Chart
       const ctxMon = document.getElementById("monthlyChart").getContext("2d");
       if(monthlyChart) monthlyChart.destroy();
       monthlyChart = new Chart(ctxMon, {
@@ -270,7 +256,6 @@
       });
     }
 
-    // Toggle monthly chart
     document.getElementById('toggleMonthly').addEventListener('click', () => {
       const container = document.getElementById('monthlyChartContainer');
       container.style.display = container.style.display === 'none' ? 'block' : 'none';
