@@ -5,7 +5,16 @@
   <title>Cash Spending Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f6f9; }
+    h1 { text-align: center; }
+    .chart-container { display: flex; justify-content: center; margin-top: 20px; }
+    canvas { max-width: 250px !important; max-height: 250px !important; }
+    #balance { font-weight: bold; margin-top: 15px; text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #eee; }
+  </style>
 </head>
 <body>
   <h1>💰 Cash Spending Tracker</h1>
