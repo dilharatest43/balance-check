@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cash Spending Tracker</title>
+  <title>💰 Cash Spending Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <style>
@@ -42,14 +42,25 @@
     // Your published sheet CSV link
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR65Z6RcDyHJ22zaLeLO7EmcIZOEZqXOve-fqqJD_cHoxxhuodeq14xk7O_Q5wLquYULXDZtFOQRTDe/pub?output=csv';
 
+    // Fetch and parse Google Sheet
     fetch(csvUrl)
       .then(response => response.text())
       .then(csv => {
         const parsed = Papa.parse(csv, { header: true }).data;
-        spendings = parsed.map(row => ({
-          category: row.Category,
-          amount: parseInt(row.Amount)
-        }));
+
+        spendings = parsed.map(row => {
+          // Normalize keys to lowercase and trim spaces
+          const keys = {};
+          for (let key in row) {
+            keys[key.trim().toLowerCase()] = row[key];
+          }
+
+          return {
+            category: keys['category'] || 'Unknown',
+            amount: parseInt(keys['amount']) || 0
+          };
+        });
+
         render();
       });
 
